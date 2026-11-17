@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>System Kernel | Multi-Model Developer Environment</title>
+  <link rel="stylesheet" href="/static/style.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+  <!-- Top Navigation Header -->
+  <header class="top-header">
+    <div class="logo-group">
+      <div class="kernel-badge">KERNEL</div>
+      <div class="title-group">
+        <h1 class="system-title">SYSTEM KERNEL</h1>
+        <span class="system-subtitle">Multi-Model Developer Environment & Orchestrator</span>
+      </div>
+    </div>
+
+    <div class="header-controls">
+      <div class="control-item">
+        <label for="primaryModelSelect">PRIMARY MODEL:</label>
+        <select id="primaryModelSelect" class="styled-select"></select>
+      </div>
+
+      <div class="fallback-pipeline">
+        <span class="label">FALLBACK PIPELINE:</span>
+        <div id="fallbackPills" class="fallback-pills"></div>
+      </div>
+
+      <button id="toggleSim429Btn" class="btn btn-warning" title="Test transparent failover by simulating HTTP 429 on primary model">
+        <span class="dot"></span> Simulate HTTP 429: <strong id="simStatus">OFF</strong>
+      </button>
+
+      <button id="undoBtn" class="btn btn-outline" title="Rollback state snapshot and file buffers">
+        ↺ Rollback
+      </button>
+    </div>
+  </header>
+
+  <!-- Main 3-Column IDE Workspace -->
+  <main class="ide-container">
+    <!-- Left Sidebar: Files & Open Buffers -->
+    <aside class="sidebar-panel">
+      <div class="panel-section">
+        <div class="section-header">
+          <span>WORKSPACE FILES</span>
+          <button id="newFileBtn" class="btn-icon" title="New File">+</button>
+        </div>
+        <div id="fileList" class="file-list"></div>
+      </div>
+
+      <div class="panel-section buffers-section">
+        <div class="section-header">
+          <span>OPEN BUFFERS (SNAPSHOT)</span>
+          <span id="bufferCount" class="badge">0</span>
+        </div>
+        <div id="bufferList" class="file-list"></div>
+      </div>
+
+      <div class="panel-footer">
+        <div class="state-indicator">
+          <span class="pulse-dot"></span>
+          <span>Single Source of Truth Active</span>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Center Panel: Active Code Buffer Editor -->
+    <section class="editor-panel">
+      <div class="editor-header">
+        <div class="tab-item active">
+          <span id="activeFileTitle">No file selected</span>
+          <span id="saveStatus" class="save-status">Saved</span>
+        </div>
+        <div class="editor-actions">
+          <button id="saveFileBtn" class="btn btn-sm btn-primary">Save Buffer</button>
+        </div>
+      </div>
+      <div class="editor-body">
+        <textarea id="codeEditor" spellcheck="false" placeholder="Select or open a file from the left sidebar..."></textarea>
+      </div>
+    </section>
+
+    <!-- Right Panel: Kernel Console & State Snapshot Inspector -->
+    <aside class="console-panel">
+      <div class="console-nav">
+        <button class="nav-tab active" data-tab="chatTab">Execution Console</button>
+        <button class="nav-tab" data-tab="snapshotTab">State Snapshot</button>
+        <button class="nav-tab" data-tab="modelsTab">Models & Failover</button>
+      </div>
+
+      <!-- Tab 1: Execution Console -->
+      <div id="chatTab" class="tab-pane active">
+        <div id="chatFeed" class="chat-feed">
+          <div class="message system-msg">
+            <div class="msg-header">System Kernel Initialized</div>
+            <div class="msg-content">
+              Zero context drift runtime ready. Send instructions to create files, fix bugs, or perform code mutations. Failover orchestrator is monitoring rate limits and latency.
+            </div>
+          </div>
+        </div>
+
+        <div class="prompt-box">
+          <textarea id="taskPromptInput" rows="3" placeholder="Enter coding instruction (e.g. 'Fix calculation in main.py' or 'Create test_calc.py')..."></textarea>
+          <div class="prompt-actions">
+            <div class="shortcut-hint">Ctrl+Enter to Execute</div>
+            <button id="executeTaskBtn" class="btn btn-primary">
+              <span>Execute Task</span>
+              <span id="execSpinner" class="spinner hidden"></span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tab 2: Snapshot Inspector -->
+      <div id="snapshotTab" class="tab-pane">
+        <div class="snapshot-header">
+          <span>CENTRALIZED WORKSPACE SNAPSHOT</span>
+          <button id="refreshSnapshotBtn" class="btn btn-sm btn-outline">Refresh</button>
+        </div>
+        <pre id="snapshotViewer" class="code-view"></pre>
+      </div>
+
+      <!-- Tab 3: Models & Failover Matrix -->
+      <div id="modelsTab" class="tab-pane">
+        <div class="matrix-header">
+          <h3>Registered Plug-and-Play AI Models</h3>
+          <p>Configure priorities, failover chains, and failure simulations.</p>
+        </div>
+        <div id="modelsMatrix" class="models-matrix"></div>
+      </div>
+    </aside>
+  </main>
+
+  <!-- Notification Toast Container -->
+  <div id="toastContainer" class="toast-container"></div>
+
+  <script src="/static/app.js"></script>
+</body>
+</html>
