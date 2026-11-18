@@ -106,7 +106,12 @@
         <div class="prompt-box">
           <textarea id="taskPromptInput" rows="3" placeholder="Enter coding instruction (e.g. 'Fix calculation in main.py' or 'Create test_calc.py')..."></textarea>
           <div class="prompt-actions">
-            <div class="shortcut-hint">Ctrl+Enter to Execute</div>
+            <div class="flex items-center gap-2">
+              <label class="text-[11px] text-[var(--muted-foreground)] flex items-center gap-1 cursor-pointer">
+                <input type="checkbox" id="autoVerifyCheck"> Auto-Verify Tests
+              </label>
+              <button id="runTestsBtn" class="btn btn-sm btn-outline text-[11px]" title="Run workspace unit tests">⚡ Run Tests</button>
+            </div>
             <button id="executeTaskBtn" class="btn btn-primary">
               <span>Execute Task</span>
               <span id="execSpinner" class="spinner hidden"></span>

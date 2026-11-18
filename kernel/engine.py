@@ -19,6 +19,7 @@ from .state_manager import WorkspaceStateManager
 from .models import ModelRegistry, create_default_registry
 from .router import FailoverRouter
 from .mutation_parser import MutationParser
+from .test_verifier import TestVerifier
 
 logger = logging.getLogger("kernel.engine")
 
@@ -106,6 +107,12 @@ class SystemKernel:
                 handoff_notes=handoff_notes
             )
 
+            # 6. Optional Automated Test Verification
+            verification_passed = None
+            verification_output = None
+            if payload.auto_verify:
+                verification_passed, verification_output = TestVerifier.run_tests(str(self.state_manager.project_root))
+
             total_latency = round(time.time() - start_time, 4)
             status = "failover_success" if handoff_notes else "success"
 
@@ -117,7 +124,9 @@ class SystemKernel:
                 handoff_notes=handoff_notes,
                 mutations_applied=applied_mutations,
                 updated_snapshot=self.state_manager.get_snapshot(),
-                latency_seconds=total_latency
+                latency_seconds=total_latency,
+                verification_passed=verification_passed,
+                verification_output=verification_output
             )
 
         except Exception as e:
@@ -148,14 +157,16 @@ class SystemKernel:
         task_prompt: str,
         primary_model: Optional[str] = None,
         fallback_models: Optional[List[str]] = None,
-        write_to_disk: bool = True
+        write_to_disk: bool = True,
+        auto_verify: bool = False
     ) -> ExecutionResult:
         """
         Convenience execution using current state snapshot and prompt string.
         """
         payload = ExecutionPayload(
             task_prompt=task_prompt,
-            workspace_snapshot=self.state_manager.get_snapshot()
+            workspace_snapshot=self.state_manager.get_snapshot(),
+            auto_verify=auto_verify
         )
         return self.execute_payload(
             payload=payload,

@@ -16,6 +16,7 @@ from .models.base import (
 )
 from .models import ModelRegistry
 from .prompt_engine import PromptEngine
+from .circuit_breaker import CircuitBreakerManager
 
 logger = logging.getLogger("kernel.router")
 
@@ -59,8 +60,17 @@ class FailoverRouter:
         for idx, model_name in enumerate(execution_queue):
             try:
                 client = self.registry.get_client(model_name)
+                config = self.registry.get_config(model_name)
             except KeyError:
                 logger.warning(f"Model '{model_name}' not registered in registry. Skipping.")
+                continue
+
+            # Circuit breaker check
+            allowed, cb_reason = CircuitBreakerManager.can_execute(config)
+            if not allowed:
+                note = f"[CIRCUIT BREAKER]: Model '{model_name}' skipped ({cb_reason}). Fast-routing to fallback model."
+                logger.warning(note)
+                handoff_notes.append(note)
                 continue
 
             # Build user prompt with uniform snapshot context and any handoff notes accumulated
@@ -68,29 +78,36 @@ class FailoverRouter:
 
             try:
                 response = client.generate(system_prompt=system_prompt, user_prompt=user_prompt)
-                # Successful execution
+                # Successful execution: record success in circuit breaker
+                CircuitBreakerManager.record_success(config)
                 return response, handoff_notes
 
             except RateLimitException as e:
                 last_exception = e
-                note = f"[HANDOFF NOTE]: Model '{model_name}' encountered HTTP 429 Rate Limit. Seamlessly routing to fallback model. Snapshot context preserved."
+                CircuitBreakerManager.record_failure(config, e)
+                trip_msg = f" Breaker TRIPPED to OPEN (cooldown {config.cooldown_seconds}s)." if config.circuit_state == "OPEN" else ""
+                note = f"[HANDOFF NOTE]: Model '{model_name}' encountered HTTP 429 Rate Limit.{trip_msg} Seamlessly routing to fallback model. Snapshot context preserved."
                 logger.warning(note)
                 handoff_notes.append(note)
 
             except TimeoutException as e:
                 last_exception = e
-                note = f"[HANDOFF NOTE]: Model '{model_name}' timed out (HTTP 408). Seamlessly routing to fallback model. Snapshot context preserved."
+                CircuitBreakerManager.record_failure(config, e)
+                trip_msg = f" Breaker TRIPPED to OPEN (cooldown {config.cooldown_seconds}s)." if config.circuit_state == "OPEN" else ""
+                note = f"[HANDOFF NOTE]: Model '{model_name}' timed out (HTTP 408).{trip_msg} Seamlessly routing to fallback model. Snapshot context preserved."
                 logger.warning(note)
                 handoff_notes.append(note)
 
             except ModelExecutionException as e:
                 last_exception = e
+                CircuitBreakerManager.record_failure(config, e)
                 note = f"[HANDOFF NOTE]: Model '{model_name}' encountered generation error ({e.status_code}): {e.message}. Seamlessly routing to fallback model."
                 logger.warning(note)
                 handoff_notes.append(note)
 
             except Exception as e:
                 last_exception = e
+                CircuitBreakerManager.record_failure(config, e)
                 note = f"[HANDOFF NOTE]: Unexpected error on '{model_name}': {str(e)}. Seamlessly routing to fallback model."
                 logger.error(note)
                 handoff_notes.append(note)

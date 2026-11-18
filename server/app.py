@@ -19,6 +19,8 @@ from kernel.types import (
     ExecutionResult,
     ModelConfig
 )
+from kernel.circuit_breaker import CircuitBreakerManager
+from kernel.test_verifier import TestVerifier
 
 
 app = FastAPI(
@@ -49,6 +51,7 @@ class ExecuteRequest(BaseModel):
     task_prompt: str
     primary_model: Optional[str] = None
     workspace_snapshot: Optional[WorkspaceSnapshot] = None
+    auto_verify: bool = False
 
 
 class FileOpenRequest(BaseModel):
@@ -90,7 +93,8 @@ def execute_task(req: ExecuteRequest) -> ExecutionResult:
     snapshot = req.workspace_snapshot or kernel.state_manager.get_snapshot()
     payload = ExecutionPayload(
         task_prompt=req.task_prompt,
-        workspace_snapshot=snapshot
+        workspace_snapshot=snapshot,
+        auto_verify=req.auto_verify
     )
     result = kernel.execute_payload(
         payload=payload,
@@ -107,6 +111,24 @@ def get_models():
         "primary_model": kernel.primary_model,
         "models": [c.model_dump() for c in configs]
     }
+
+
+@app.post("/api/models/reset-circuit")
+def reset_circuit(req: ModelSelectRequest):
+    """Resets the circuit breaker state to CLOSED for the given model."""
+    try:
+        cfg = kernel.registry.get_config(req.model_name)
+        CircuitBreakerManager.reset_circuit(cfg)
+        return {"status": "success", "model_name": req.model_name, "circuit_state": cfg.circuit_state}
+    except KeyError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+
+
+@app.post("/api/verify")
+def run_verification():
+    """Runs project unit tests and returns pass/fail status and output."""
+    passed, output = TestVerifier.run_tests(str(kernel.state_manager.project_root))
+    return {"passed": passed, "output": output}
 
 
 @app.post("/api/models/set-primary")

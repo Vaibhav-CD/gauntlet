@@ -38,6 +38,8 @@ class KernelIDE {
     this.taskPromptInput = document.getElementById("taskPromptInput");
     this.executeTaskBtn = document.getElementById("executeTaskBtn");
     this.execSpinner = document.getElementById("execSpinner");
+    this.autoVerifyCheck = document.getElementById("autoVerifyCheck");
+    this.runTestsBtn = document.getElementById("runTestsBtn");
 
     this.snapshotViewer = document.getElementById("snapshotViewer");
     this.refreshSnapshotBtn = document.getElementById("refreshSnapshotBtn");
@@ -71,6 +73,11 @@ class KernelIDE {
         this.executeTask();
       }
     });
+
+    // Run Tests
+    if (this.runTestsBtn) {
+      this.runTestsBtn.addEventListener("click", () => this.runTests());
+    }
 
     // Refresh Snapshot
     this.refreshSnapshotBtn.addEventListener("click", () => this.loadSnapshot());
@@ -351,13 +358,15 @@ class KernelIDE {
     this.executeTaskBtn.disabled = true;
 
     try {
+      const autoVerify = this.autoVerifyCheck ? this.autoVerifyCheck.checked : false;
       const res = await fetch("/api/execute", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           task_prompt: promptText,
           primary_model: this.primaryModel,
-          workspace_snapshot: this.currentSnapshot
+          workspace_snapshot: this.currentSnapshot,
+          auto_verify: autoVerify
         })
       });
 
@@ -373,18 +382,28 @@ class KernelIDE {
       // Append assistant response
       let mutationInfo = "";
       if (result.mutations_applied && result.mutations_applied.length > 0) {
-        const mutItems = result.mutations_applied.map(m =>
-          `<div>✓ [${m.action.toUpperCase()}] <strong>${m.file_path}</strong></div>`
-        ).join("");
+        const mutItems = result.mutations_applied.map(m => {
+          const syntaxTag = m.syntax_valid !== false ? '<span style="color:#10b981"> [Syntax Valid]</span>' : '<span style="color:#ef4444"> [Syntax Error]</span>';
+          return `<div>✓ [${m.action.toUpperCase()}] <strong>${m.file_path}</strong>${syntaxTag}</div>`;
+        }).join("");
         mutationInfo = `<div class="mutation-badge">${mutItems}</div>`;
       }
 
+      // Verification info if auto_verify was enabled
+      let verifyBadge = "";
+      if (result.verification_passed !== null && result.verification_passed !== undefined) {
+        const passClass = result.verification_passed ? "color:#10b981;" : "color:#ef4444;";
+        const passIcon = result.verification_passed ? "✓" : "✗";
+        verifyBadge = `<div style="margin-top:6px; font-size:0.75rem; ${passClass}"><strong>${passIcon} Test Verification:</strong> ${result.verification_output.split("\n")[0]}</div>`;
+      }
+
       const metaHeader = `Model: ${result.model_used} | Latency: ${result.latency_seconds}s | Status: ${result.status}`;
-      this.appendChatMessage(metaHeader, result.response_text + mutationInfo, "assistant-msg");
+      this.appendChatMessage(metaHeader, result.response_text + mutationInfo + verifyBadge, "assistant-msg");
 
       // Auto update active editor and snapshot
       await this.loadSnapshot();
       await this.loadFiles();
+      await this.loadModels();
 
       if (result.status === "failover_success") {
         this.showToast(`Task completed via failover model '${result.model_used}'!`, "warn");
@@ -398,6 +417,20 @@ class KernelIDE {
     } finally {
       this.execSpinner.classList.add("hidden");
       this.executeTaskBtn.disabled = false;
+    }
+  }
+
+  async runTests() {
+    this.appendChatMessage("Test Runner", "Running project unit tests...", "system-msg");
+    try {
+      const res = await fetch("/api/verify", { method: "POST" });
+      const data = await res.json();
+      const statusClass = data.passed ? "assistant-msg" : "handoff-alert";
+      const header = data.passed ? "✓ All Unit Tests Passed" : "✗ Unit Tests Failed";
+      this.appendChatMessage(header, `<pre style="font-size:0.75rem; font-family:var(--font-mono);">${data.output}</pre>`, statusClass);
+      this.showToast(data.passed ? "Tests passed successfully!" : "Tests failed", data.passed ? "success" : "error");
+    } catch (err) {
+      this.showToast(`Error running tests: ${err}`, "error");
     }
   }
 
@@ -419,25 +452,38 @@ class KernelIDE {
       card.className = `model-card ${m.name === this.primaryModel ? "is-primary" : ""}`;
 
       const isPrimary = m.name === this.primaryModel;
-      const badge = isPrimary
+      const primaryBadge = isPrimary
         ? '<span class="pill active">ACTIVE PRIMARY</span>'
         : (m.is_fallback ? '<span class="pill fallback">FALLBACK</span>' : '');
+
+      let cbBadge = '<span class="pill" style="border-color:#10b981; color:#10b981;">CIRCUIT: HEALTHY</span>';
+      if (m.circuit_state === "OPEN") {
+        cbBadge = '<span class="pill" style="border-color:#ef4444; color:#ef4444;">CIRCUIT: OPEN (COOLDOWN)</span>';
+      } else if (m.circuit_state === "HALF_OPEN") {
+        cbBadge = '<span class="pill" style="border-color:#f59e0b; color:#f59e0b;">CIRCUIT: HALF-OPEN</span>';
+      }
 
       card.innerHTML = `
         <div class="card-top">
           <span class="model-name">${m.name}</span>
-          ${badge}
+          <div style="display:flex; gap:4px; align-items:center;">
+            ${cbBadge}
+            ${primaryBadge}
+          </div>
         </div>
         <div class="card-body">
           <span>Provider: <strong>${m.provider}</strong></span>
           <span>Model ID: <strong>${m.model_id}</strong></span>
-          <span>Priority: <strong>${m.priority}</strong></span>
+          <span>Failures: <strong>${m.failure_count || 0}</strong></span>
         </div>
         <div class="card-actions">
-          <label style="font-size: 0.75rem; color: var(--text-muted); cursor: pointer;">
-            <input type="checkbox" ${m.simulate_429 ? "checked" : ""} class="sim-check" data-model="${m.name}">
-            Simulate 429
-          </label>
+          <div style="display:flex; gap:10px; align-items:center;">
+            <label style="font-size: 0.75rem; color: var(--text-muted); cursor: pointer;">
+              <input type="checkbox" ${m.simulate_429 ? "checked" : ""} class="sim-check" data-model="${m.name}">
+              Simulate 429
+            </label>
+            ${m.circuit_state === "OPEN" ? `<button class="btn btn-sm btn-warning reset-circuit-btn" data-model="${m.name}">Reset Circuit</button>` : ''}
+          </div>
           ${!isPrimary ? `<button class="btn btn-sm btn-outline make-primary-btn" data-model="${m.name}">Set as Primary</button>` : ''}
         </div>
       `;
@@ -456,6 +502,21 @@ class KernelIDE {
         await this.loadModels();
         this.renderModelsMatrix();
       });
+
+      // Reset Circuit button
+      const resetBtn = card.querySelector(".reset-circuit-btn");
+      if (resetBtn) {
+        resetBtn.addEventListener("click", async () => {
+          await fetch("/api/models/reset-circuit", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ model_name: m.name })
+          });
+          this.showToast(`Reset circuit breaker for ${m.name}`);
+          await this.loadModels();
+          this.renderModelsMatrix();
+        });
+      }
 
       // Set primary button
       const setBtn = card.querySelector(".make-primary-btn");

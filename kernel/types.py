@@ -37,6 +37,7 @@ class ExecutionPayload(BaseModel):
     """
     task_prompt: str = Field(..., description="The user coding instruction, bug fix request, or query")
     workspace_snapshot: WorkspaceSnapshot = Field(..., description="The centralized state snapshot")
+    auto_verify: bool = Field(default=False, description="Whether to automatically run tests after state mutation")
 
 
 class BlockReplacement(BaseModel):
@@ -52,8 +53,13 @@ class CodeMutation(BaseModel):
     content: Optional[str] = None
     block_replacement: Optional[BlockReplacement] = None
     diff: Optional[str] = None
+    syntax_valid: bool = True
+    syntax_error: Optional[str] = None
     success: bool = True
     error: Optional[str] = None
+
+
+CircuitState = Literal["CLOSED", "OPEN", "HALF_OPEN"]
 
 
 class ModelConfig(BaseModel):
@@ -66,6 +72,12 @@ class ModelConfig(BaseModel):
     timeout_seconds: float = 30.0
     is_fallback: bool = False
     priority: int = 0  # Lower number = higher priority
+    # Circuit Breaker attributes
+    circuit_state: CircuitState = "CLOSED"
+    failure_count: int = 0
+    failure_threshold: int = 2
+    cooldown_seconds: float = 60.0
+    last_failure_time: Optional[float] = None
     # Simulation flags for deterministic failover testing
     simulate_429: bool = False
     simulate_timeout: bool = False
@@ -94,3 +106,5 @@ class ExecutionResult(BaseModel):
     updated_snapshot: WorkspaceSnapshot
     latency_seconds: float = 0.0
     error_message: Optional[str] = None
+    verification_passed: Optional[bool] = None
+    verification_output: Optional[str] = None

@@ -22,6 +22,9 @@ from .models import (
     TimeoutException,
     ModelExecutionException
 )
+from .circuit_breaker import CircuitBreakerManager
+from .syntax_validator import SyntaxValidator
+from .test_verifier import TestVerifier
 from .router import FailoverRouter
 from .prompt_engine import PromptEngine
 from .mutation_parser import MutationParser
@@ -44,6 +47,9 @@ __all__ = [
     "RateLimitException",
     "TimeoutException",
     "ModelExecutionException",
+    "CircuitBreakerManager",
+    "SyntaxValidator",
+    "TestVerifier",
     "FailoverRouter",
     "PromptEngine",
     "MutationParser",

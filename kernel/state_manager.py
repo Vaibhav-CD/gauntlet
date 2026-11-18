@@ -16,6 +16,7 @@ from .types import (
     CodeMutation,
     BlockReplacement,
 )
+from .syntax_validator import SyntaxValidator
 
 
 class WorkspaceStateManager:
@@ -49,9 +50,12 @@ class WorkspaceStateManager:
 
     def _get_absolute_path(self, rel_or_abs_path: str) -> Path:
         p = Path(rel_or_abs_path)
-        if p.is_absolute():
-            return p.resolve()
-        return (self.project_root / p).resolve()
+        resolved = (p if p.is_absolute() else (self.project_root / p)).resolve()
+        try:
+            resolved.relative_to(self.project_root)
+        except ValueError:
+            raise PermissionError(f"Path traversal detected: '{rel_or_abs_path}' attempts to escape project root '{self.project_root}'")
+        return resolved
 
     def _compute_checksum(self, content: str) -> str:
         return hashlib.sha256(content.encode("utf-8")).hexdigest()[:12]
@@ -200,6 +204,14 @@ class WorkspaceStateManager:
             if mutation.action == "create":
                 old_code = ""
                 new_code = mutation.content or ""
+
+                # Pre-commit syntax validation
+                is_valid, s_err = SyntaxValidator.validate(rel_path, new_code)
+                mutation.syntax_valid = is_valid
+                mutation.syntax_error = s_err
+                if not is_valid:
+                    raise ValueError(f"Pre-commit syntax validation rejected mutation: {s_err}")
+
                 self.snapshot.open_files[rel_path] = new_code
                 self.snapshot.active_file = rel_path
                 diff = self.compute_diff(old_code, new_code, rel_path)
@@ -220,6 +232,14 @@ class WorkspaceStateManager:
                     old_code = ""
 
                 new_code = mutation.content if mutation.content is not None else old_code
+
+                # Pre-commit syntax validation
+                is_valid, s_err = SyntaxValidator.validate(rel_path, new_code)
+                mutation.syntax_valid = is_valid
+                mutation.syntax_error = s_err
+                if not is_valid:
+                    raise ValueError(f"Pre-commit syntax validation rejected mutation: {s_err}")
+
                 self.snapshot.open_files[rel_path] = new_code
                 self.snapshot.active_file = rel_path
                 diff = self.compute_diff(old_code, new_code, rel_path)
@@ -246,6 +266,14 @@ class WorkspaceStateManager:
                     raise FileNotFoundError(f"Cannot replace block: file {rel_path} does not exist.")
 
                 new_code = self._smart_block_replace(old_code, search_target, replacement_text, file_path=rel_path)
+
+                # Pre-commit syntax validation
+                is_valid, s_err = SyntaxValidator.validate(rel_path, new_code)
+                mutation.syntax_valid = is_valid
+                mutation.syntax_error = s_err
+                if not is_valid:
+                    raise ValueError(f"Pre-commit syntax validation rejected mutation: {s_err}")
+
                 self.snapshot.open_files[rel_path] = new_code
                 self.snapshot.active_file = rel_path
                 diff = self.compute_diff(old_code, new_code, rel_path)

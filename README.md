@@ -11,16 +11,20 @@ A production-grade, zero-context-drift developer environment and system kernel d
    - All files, active code buffers, temporal interaction turns, and execution diffs are read from and written back to a single `WorkspaceSnapshot` payload.
 2. **Dynamic Model Agnosticism**
    - Uniform prompt construction and state handling whether backed by local open-weight runtimes (Ollama, vLLM, llama.cpp) or cloud providers (Gemini, Anthropic, OpenAI, Groq, OpenRouter).
-3. **Transparent Failover & Handoff Engine**
+3. **Transparent Failover & Circuit Breaker Engine**
    - Automatically catches HTTP 429 (Rate Limit Exceeded), HTTP 408 (Timeouts), and server errors.
-   - Instantly routes the exact same `workspace_snapshot` and task payload to designated fallback models.
-   - Appends concise handoff notes into the session history to maintain unbroken continuity.
-4. **Zero Copy-Pasting (State Mutation Engine)**
+   - Enforces a resilient **Circuit Breaker** (`CLOSED`, `OPEN`, `HALF_OPEN`) with configurable cooldowns (e.g. 60s) to avoid hammering degraded providers.
+   - Instantly routes the exact same `workspace_snapshot` and task payload to designated fallback models with concise handoff notes.
+4. **Pre-Commit In-Memory Syntax Validation & Security**
+   - Syntax validation (`ast.parse` for Python, `json.loads` for JSON, bracket balancing for JS/TS) validates mutations *before* applying to memory buffers or disk, rejecting corrupted code.
+   - Strict canonical path traversal protection prevents LLM paths from escaping the project root.
+5. **Zero Copy-Pasting (State Mutation Engine)**
    - Parses search/replace blocks (`<<<SEARCH_REPLACE>>>`), full file updates (`<<<FILE_UPDATE>>>`), and deletions (`<<<FILE_DELETE>>>`).
    - Automatically updates open in-memory buffers and synchronizes changes to disk with unified diff tracking and snapshot rollback.
-5. **Dual Developer Interfaces**
+6. **Automated Test Verification & Dual Developer Interfaces**
+   - Optional automated test execution post-mutation (`auto_verify=True`).
    - **Interactive CLI / TUI REPL** (`run_cli.py`) with rich terminal colors, slash commands, and snapshot inspection.
-   - **Full-Featured Web IDE** (`run_server.py`) with 3-column layout: workspace file explorer, live code editor/buffer viewer, chat console, model matrix, and live HTTP 429 simulation toggle.
+   - **Full-Featured Web IDE** (`run_server.py`) with 3-column layout: workspace file explorer, live code editor/buffer viewer, chat console, model matrix, circuit breaker reset buttons, test runner, and live HTTP 429 simulation toggle.
 
 ---
 
