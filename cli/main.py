@@ -14,6 +14,7 @@ from colorama import Fore, Back, Style
 
 from kernel.engine import SystemKernel
 from kernel.types import ModelConfig
+from kernel.test_verifier import TestVerifier
 
 
 def print_banner():
@@ -29,6 +30,8 @@ def print_banner():
     print(Fore.WHITE + "  /models             - View registered models and fallback chain")
     print(Fore.WHITE + "  /set-model <name>   - Switch primary model")
     print(Fore.WHITE + "  /simulate-429       - Toggle simulated HTTP 429 rate limit on primary")
+    print(Fore.WHITE + "  /verify             - Run automated project unit tests")
+    print(Fore.WHITE + "  /diff               - View unified diff of last applied mutation")
     print(Fore.WHITE + "  /undo               - Rollback last state mutation")
     print(Fore.WHITE + "  /snapshot           - Display centralized state snapshot JSON")
     print(Fore.WHITE + "  /exit               - Quit REPL")
@@ -112,6 +115,33 @@ def run_cli(project_root: str = "."):
                     print(Fore.YELLOW + f"[*] Rate Limit Simulation on '{kernel.primary_model}': {state}")
                 except Exception as e:
                     print(Fore.RED + f"[-] {e}")
+
+            elif user_input == "/verify":
+                print(Fore.BLUE + "[*] Running project unit tests...")
+                passed, output = TestVerifier.run_tests(kernel.state_manager.project_root)
+                color = Fore.GREEN if passed else Fore.RED
+                print(color + output)
+
+            elif user_input == "/diff":
+                history = kernel.state_manager.snapshot.recent_history
+                found = False
+                for turn in reversed(history):
+                    if turn.diffs:
+                        print(Fore.MAGENTA + f"\n=== LATEST DIFFS (Turn {turn.turn_id}) ===")
+                        for d in turn.diffs:
+                            print(Fore.CYAN + f"File: {d.get('file')} ({d.get('action')})")
+                            diff_lines = (d.get("diff") or "").split("\n")
+                            for line in diff_lines:
+                                if line.startswith("+") and not line.startswith("+++"):
+                                    print(Fore.GREEN + line)
+                                elif line.startswith("-") and not line.startswith("---"):
+                                    print(Fore.RED + line)
+                                else:
+                                    print(Fore.WHITE + line)
+                        found = True
+                        break
+                if not found:
+                    print(Fore.YELLOW + "[!] No diffs found in recent interaction history.")
 
             elif user_input == "/undo":
                 restored = kernel.state_manager.rollback()

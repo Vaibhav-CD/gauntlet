@@ -88,6 +88,7 @@ def create_default_registry() -> ModelRegistry:
         name="primary-mock",
         provider="mock",
         model_id="mock-fast-coder",
+        model_tier="fast",
         priority=1,
         is_fallback=False
     ))
@@ -97,6 +98,7 @@ def create_default_registry() -> ModelRegistry:
         name="fallback-mock",
         provider="mock",
         model_id="mock-resilient-coder",
+        model_tier="balanced",
         priority=2,
         is_fallback=True
     ))
@@ -106,6 +108,7 @@ def create_default_registry() -> ModelRegistry:
         name="gemini-1.5-flash",
         provider="gemini",
         model_id="gemini-1.5-flash",
+        model_tier="fast",
         priority=3,
         is_fallback=False
     ))
@@ -114,6 +117,7 @@ def create_default_registry() -> ModelRegistry:
         name="gpt-4o-mini",
         provider="openai",
         model_id="gpt-4o-mini",
+        model_tier="fast",
         priority=4,
         is_fallback=True
     ))
@@ -122,6 +126,7 @@ def create_default_registry() -> ModelRegistry:
         name="claude-3-5-sonnet",
         provider="anthropic",
         model_id="claude-3-5-sonnet-20241022",
+        model_tier="reasoning",
         priority=5,
         is_fallback=False
     ))
@@ -130,6 +135,7 @@ def create_default_registry() -> ModelRegistry:
         name="ollama-qwen",
         provider="ollama",
         model_id="qwen2.5-coder:7b",
+        model_tier="balanced",
         priority=6,
         is_fallback=True
     ))

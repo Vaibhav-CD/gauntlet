@@ -38,6 +38,9 @@ class ExecutionPayload(BaseModel):
     task_prompt: str = Field(..., description="The user coding instruction, bug fix request, or query")
     workspace_snapshot: WorkspaceSnapshot = Field(..., description="The centralized state snapshot")
     auto_verify: bool = Field(default=False, description="Whether to automatically run tests after state mutation")
+    routing_tier: Literal["auto", "fast", "balanced", "reasoning"] = Field(
+        default="auto", description="Model capacity tier requirement"
+    )
 
 
 class BlockReplacement(BaseModel):
@@ -60,6 +63,7 @@ class CodeMutation(BaseModel):
 
 
 CircuitState = Literal["CLOSED", "OPEN", "HALF_OPEN"]
+ModelTier = Literal["fast", "balanced", "reasoning"]
 
 
 class ModelConfig(BaseModel):
@@ -67,6 +71,7 @@ class ModelConfig(BaseModel):
     name: str
     provider: Literal["mock", "openai", "anthropic", "gemini", "ollama", "groq", "openrouter", "custom"]
     model_id: str
+    model_tier: ModelTier = "balanced"
     api_key: Optional[str] = None
     base_url: Optional[str] = None
     timeout_seconds: float = 30.0

@@ -71,11 +71,13 @@
     <!-- Center Panel: Active Code Buffer Editor -->
     <section class="editor-panel">
       <div class="editor-header">
-        <div class="tab-item active">
-          <span id="activeFileTitle">No file selected</span>
-          <span id="saveStatus" class="save-status">Saved</span>
+        <div id="editorTabs" class="editor-tabs">
+          <div class="tab-item active">
+            <span id="activeFileTitle">No file selected</span>
+          </div>
         </div>
         <div class="editor-actions">
+          <span id="saveStatus" class="save-status">Saved</span>
           <button id="saveFileBtn" class="btn btn-sm btn-primary">Save Buffer</button>
         </div>
       </div>
@@ -139,6 +141,19 @@
       </div>
     </aside>
   </main>
+
+  <!-- Unified Diff Viewer Modal -->
+  <div id="diffModal" class="modal-overlay hidden">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3 id="diffModalTitle" class="text-sm font-bold text-[var(--accent-cyan)] font-mono">Mutation Diff</h3>
+        <button id="closeDiffModalBtn" class="btn-icon">✕</button>
+      </div>
+      <div class="modal-body">
+        <pre id="diffModalContent" class="diff-viewer-code"></pre>
+      </div>
+    </div>
+  </div>
 
   <!-- Notification Toast Container -->
   <div id="toastContainer" class="toast-container"></div>

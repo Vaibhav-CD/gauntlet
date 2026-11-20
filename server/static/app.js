@@ -33,6 +33,12 @@ class KernelIDE {
     this.saveStatus = document.getElementById("saveStatus");
     this.saveFileBtn = document.getElementById("saveFileBtn");
     this.codeEditor = document.getElementById("codeEditor");
+    this.editorTabs = document.getElementById("editorTabs");
+
+    this.diffModal = document.getElementById("diffModal");
+    this.diffModalTitle = document.getElementById("diffModalTitle");
+    this.diffModalContent = document.getElementById("diffModalContent");
+    this.closeDiffModalBtn = document.getElementById("closeDiffModalBtn");
 
     this.chatFeed = document.getElementById("chatFeed");
     this.taskPromptInput = document.getElementById("taskPromptInput");
@@ -62,6 +68,18 @@ class KernelIDE {
 
     // Save File
     this.saveFileBtn.addEventListener("click", () => this.saveActiveFile());
+
+    // Diff modal close
+    if (this.closeDiffModalBtn) {
+      this.closeDiffModalBtn.addEventListener("click", () => {
+        this.diffModal.classList.add("hidden");
+      });
+    }
+    if (this.diffModal) {
+      this.diffModal.addEventListener("click", (e) => {
+        if (e.target === this.diffModal) this.diffModal.classList.add("hidden");
+      });
+    }
 
     // New File
     this.newFileBtn.addEventListener("click", () => this.promptNewFile());
@@ -239,14 +257,74 @@ class KernelIDE {
         this.bufferList.appendChild(item);
       });
 
+      // Render multi-file editor tabs
+      if (this.editorTabs) {
+        this.editorTabs.innerHTML = "";
+        data.open_files.forEach(f => {
+          const tab = document.createElement("div");
+          tab.className = `tab-item ${f === data.active_file ? "active" : ""}`;
+          tab.innerHTML = `
+            <span class="tab-title">${f}</span>
+            <span class="tab-close" title="Close buffer">✕</span>
+          `;
+          tab.querySelector(".tab-title").onclick = () => this.openFile(f);
+          tab.querySelector(".tab-close").onclick = (e) => {
+            e.stopPropagation();
+            this.closeFile(f);
+          };
+          this.editorTabs.appendChild(tab);
+        });
+      }
+
       // If active file set, load its content into editor
       if (data.active_file) {
         this.activeFile = data.active_file;
-        this.activeFileTitle.textContent = data.active_file;
+        if (this.activeFileTitle) this.activeFileTitle.textContent = data.active_file;
       }
     } catch (err) {
       console.error("Error loading files:", err);
     }
+  }
+
+  async closeFile(filePath) {
+    try {
+      const res = await fetch("/api/files/close", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ file_path: filePath })
+      });
+      const data = await res.json();
+      if (data.status === "success") {
+        this.showToast(`Closed buffer: ${filePath}`);
+        if (data.active_file) {
+          await this.openFile(data.active_file);
+        } else {
+          this.activeFile = null;
+          this.codeEditor.value = "";
+          if (this.activeFileTitle) this.activeFileTitle.textContent = "No file selected";
+        }
+        await this.loadFiles();
+        await this.loadSnapshot();
+      }
+    } catch (err) {
+      this.showToast(`Error closing buffer: ${err}`, "error");
+    }
+  }
+
+  showDiffModal(filePath, diffText) {
+    if (!this.diffModal) return;
+    this.diffModalTitle.textContent = `Mutation Diff: ${filePath}`;
+    const lines = (diffText || "").split("\n").map(l => {
+      const escaped = l.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+      if (l.startsWith("+") && !l.startsWith("+++")) {
+        return `<span class="diff-add">${escaped}</span>`;
+      } else if (l.startsWith("-") && !l.startsWith("---")) {
+        return `<span class="diff-del">${escaped}</span>`;
+      }
+      return escaped;
+    }).join("\n");
+    this.diffModalContent.innerHTML = lines || "No changes detected.";
+    this.diffModal.classList.remove("hidden");
   }
 
   async openFile(filePath) {
@@ -384,7 +462,11 @@ class KernelIDE {
       if (result.mutations_applied && result.mutations_applied.length > 0) {
         const mutItems = result.mutations_applied.map(m => {
           const syntaxTag = m.syntax_valid !== false ? '<span style="color:#10b981"> [Syntax Valid]</span>' : '<span style="color:#ef4444"> [Syntax Error]</span>';
-          return `<div>✓ [${m.action.toUpperCase()}] <strong>${m.file_path}</strong>${syntaxTag}</div>`;
+          const diffBtn = m.diff ? `<button class="btn-diff-view" onclick="window.kernelIDE.showDiffModal('${m.file_path}', decodeURIComponent('${encodeURIComponent(m.diff)}'))">View Diff</button>` : '';
+          return `<div style="display:flex; justify-content:space-between; align-items:center; margin: 3px 0;">
+            <div>✓ [${m.action.toUpperCase()}] <strong>${m.file_path}</strong>${syntaxTag}</div>
+            ${diffBtn}
+          </div>`;
         }).join("");
         mutationInfo = `<div class="mutation-badge">${mutItems}</div>`;
       }

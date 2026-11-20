@@ -29,6 +29,26 @@ class FailoverRouter:
     def __init__(self, registry: ModelRegistry):
         self.registry = registry
 
+    @staticmethod
+    def classify_task_tier(prompt: str) -> str:
+        """
+        Classifies task prompt into capacity tiers:
+        - 'fast': formatting, comments, typo fixes, docstrings, simple edits
+        - 'reasoning': refactoring, architecture, multi-file, algorithms, redesign, security
+        - 'balanced': standard feature development and bug fixes
+        """
+        low = prompt.lower()
+        reasoning_keywords = {"refactor", "architecture", "multi-file", "redesign", "optimize", "security", "complex", "algorithm", "design pattern", "system"}
+        fast_keywords = {"typo", "docstring", "comment", "format", "rename", "simple", "explain", "lint", "todo"}
+
+        for kw in reasoning_keywords:
+            if kw in low:
+                return "reasoning"
+        for kw in fast_keywords:
+            if kw in low:
+                return "fast"
+        return "balanced"
+
     def execute_with_failover(
         self,
         payload: ExecutionPayload,
@@ -52,6 +72,12 @@ class FailoverRouter:
             ]
 
         execution_queue = [primary_model_name] + [m for m in fallback_models if m != primary_model_name]
+
+        # Dynamic tier-based routing adjustment if auto tier requested
+        target_tier = payload.routing_tier
+        if target_tier == "auto":
+            target_tier = self.classify_task_tier(payload.task_prompt)
+
         handoff_notes: List[str] = []
         last_exception = None
 

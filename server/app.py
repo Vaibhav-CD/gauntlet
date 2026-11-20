@@ -186,6 +186,18 @@ def open_file(req: FileOpenRequest):
         raise HTTPException(status_code=400, detail=str(e))
 
 
+@app.post("/api/files/close")
+def close_file(req: FileOpenRequest):
+    """Closes a file from open buffer snapshot."""
+    kernel.state_manager.close_file(req.file_path)
+    return {
+        "status": "success",
+        "file_path": req.file_path,
+        "open_files": list(kernel.state_manager.snapshot.open_files.keys()),
+        "active_file": kernel.state_manager.snapshot.active_file
+    }
+
+
 @app.post("/api/files/save")
 def save_file(req: FileSaveRequest):
     """Updates buffer and writes content directly to disk."""
