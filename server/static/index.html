@@ -9,32 +9,67 @@
   <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 </head>
 <body>
-  <!-- Top Navigation Header -->
-  <header class="top-header">
+  <!-- Top Navigation Header with Gauntlet Design -->
+  <header class="top-header gauntlet-header">
     <div class="logo-group">
-      <div class="kernel-badge">KERNEL</div>
+      <!-- Armored Gauntlet Mech Insignia -->
+      <div class="gauntlet-emblem" title="Gauntlet System Kernel">
+        <svg class="gauntlet-svg" viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <!-- Wrist armor plate -->
+          <path d="M6 28 L10 33 L26 33 L30 28 L27 24 L9 24 Z" fill="#1e2538" stroke="#00f0ff" stroke-width="1.2"/>
+          <path d="M12 28 L24 28" stroke="#00f0ff" stroke-width="1" stroke-dasharray="2 2"/>
+          <!-- Palm chassis plate -->
+          <path d="M8 23 L28 23 L29 15 L26 13 L10 13 L7 15 Z" fill="#151a29" stroke="#8b5cf6" stroke-width="1.2"/>
+          <!-- Central Palm Arc Reactor Core -->
+          <circle cx="18" cy="18" r="4.5" fill="#0f172a" stroke="#00f0ff" stroke-width="1.2"/>
+          <circle cx="18" cy="18" r="2.5" fill="#00f0ff" class="core-pulse"/>
+          <!-- Knuckle armor fingers with Power Sockets -->
+          <!-- Knuckle 1 (Pinky) -->
+          <rect x="7" y="5" width="4" height="7" rx="1.5" fill="#1e2538" stroke="#3b82f6" stroke-width="1"/>
+          <circle cx="9" cy="7.5" r="1.2" fill="#3b82f6" class="socket-gem gem-blue"/>
+          <!-- Knuckle 2 (Ring) -->
+          <rect x="12" y="3" width="4.5" height="9" rx="1.5" fill="#1e2538" stroke="#8b5cf6" stroke-width="1"/>
+          <circle cx="14.2" cy="6" r="1.3" fill="#8b5cf6" class="socket-gem gem-purple"/>
+          <!-- Knuckle 3 (Middle - Primary) -->
+          <rect x="17.5" y="2" width="5" height="10" rx="1.5" fill="#1e2538" stroke="#00f0ff" stroke-width="1.2"/>
+          <circle cx="20" cy="5" r="1.5" fill="#00f0ff" class="socket-gem gem-cyan"/>
+          <!-- Knuckle 4 (Index) -->
+          <rect x="23.5" y="4" width="4.5" height="8" rx="1.5" fill="#1e2538" stroke="#10b981" stroke-width="1"/>
+          <circle cx="25.7" cy="6.5" r="1.3" fill="#10b981" class="socket-gem gem-green"/>
+          <!-- Thumb -->
+          <path d="M7 16 L2 18 L3 23 L8 21 Z" fill="#1e2538" stroke="#f59e0b" stroke-width="1"/>
+          <circle cx="4.5" cy="20" r="1.2" fill="#f59e0b" class="socket-gem gem-amber"/>
+        </svg>
+      </div>
+
       <div class="title-group">
-        <h1 class="system-title">SYSTEM KERNEL</h1>
-        <span class="system-subtitle">Multi-Model Developer Environment & Orchestrator</span>
+        <div class="flex items-center gap-2">
+          <h1 class="system-title gauntlet-title">GAUNTLET</h1>
+          <span class="gauntlet-version-badge">KERNEL v2.0</span>
+        </div>
+        <span class="system-subtitle">Multi-Model Armored Orchestration Engine</span>
+      </div>
+    </div>
+
+    <!-- Gauntlet Knuckle Sockets HUD (Interactive Model Matrix) -->
+    <div class="gauntlet-knuckle-bar" title="Gauntlet Sockets: Click to engage model core">
+      <div class="knuckle-label">CORE SOCKETS:</div>
+      <div id="knuckleSockets" class="knuckle-sockets-container">
+        <!-- Injected via JavaScript from registered models -->
       </div>
     </div>
 
     <div class="header-controls">
-      <div class="control-item">
-        <label for="primaryModelSelect">PRIMARY MODEL:</label>
-        <select id="primaryModelSelect" class="styled-select"></select>
+      <div class="control-item hidden md:flex">
+        <label for="primaryModelSelect">CORE:</label>
+        <select id="primaryModelSelect" class="styled-select gauntlet-select"></select>
       </div>
 
-      <div class="fallback-pipeline">
-        <span class="label">FALLBACK PIPELINE:</span>
-        <div id="fallbackPills" class="fallback-pills"></div>
-      </div>
-
-      <button id="toggleSim429Btn" class="btn btn-warning" title="Test transparent failover by simulating HTTP 429 on primary model">
-        <span class="dot"></span> Simulate HTTP 429: <strong id="simStatus">OFF</strong>
+      <button id="toggleSim429Btn" class="btn btn-warning gauntlet-sim-btn" title="Overload primary socket to test failover conduit">
+        <span class="spark-icon">⚡</span> OVERLOAD 429: <strong id="simStatus">OFF</strong>
       </button>
 
-      <button id="undoBtn" class="btn btn-outline" title="Rollback state snapshot and file buffers">
+      <button id="undoBtn" class="btn btn-outline gauntlet-btn" title="Rollback state snapshot and file buffers">
         ↺ Rollback
       </button>
     </div>
@@ -43,10 +78,10 @@
   <!-- Main 3-Column IDE Workspace -->
   <main class="ide-container">
     <!-- Left Sidebar: Files & Open Buffers -->
-    <aside class="sidebar-panel">
+    <aside class="sidebar-panel gauntlet-panel">
       <div class="panel-section">
         <div class="section-header">
-          <span>WORKSPACE FILES</span>
+          <span>GAUNTLET VAULT // FILES</span>
           <button id="newFileBtn" class="btn-icon" title="New File">+</button>
         </div>
         <div id="fileList" class="file-list"></div>
@@ -54,7 +89,7 @@
 
       <div class="panel-section buffers-section">
         <div class="section-header">
-          <span>OPEN BUFFERS (SNAPSHOT)</span>
+          <span>ACTIVE NEURAL BUFFERS</span>
           <span id="bufferCount" class="badge">0</span>
         </div>
         <div id="bufferList" class="file-list"></div>
@@ -63,13 +98,13 @@
       <div class="panel-footer">
         <div class="state-indicator">
           <span class="pulse-dot"></span>
-          <span>Single Source of Truth Active</span>
+          <span>Zero Context Drift Engaged</span>
         </div>
       </div>
     </aside>
 
     <!-- Center Panel: Active Code Buffer Editor -->
-    <section class="editor-panel">
+    <section class="editor-panel gauntlet-editor">
       <div class="editor-header">
         <div id="editorTabs" class="editor-tabs">
           <div class="tab-item active">
@@ -78,7 +113,7 @@
         </div>
         <div class="editor-actions">
           <span id="saveStatus" class="save-status">Saved</span>
-          <button id="saveFileBtn" class="btn btn-sm btn-primary">Save Buffer</button>
+          <button id="saveFileBtn" class="btn btn-sm btn-primary gauntlet-action-btn">Save Buffer</button>
         </div>
       </div>
       <div class="editor-body">
@@ -87,26 +122,26 @@
     </section>
 
     <!-- Right Panel: Kernel Console & State Snapshot Inspector -->
-    <aside class="console-panel">
+    <aside class="console-panel gauntlet-panel">
       <div class="console-nav">
-        <button class="nav-tab active" data-tab="chatTab">Execution Console</button>
-        <button class="nav-tab" data-tab="snapshotTab">State Snapshot</button>
-        <button class="nav-tab" data-tab="modelsTab">Models & Failover</button>
+        <button class="nav-tab active" data-tab="chatTab">Gauntlet Console</button>
+        <button class="nav-tab" data-tab="snapshotTab">Snapshot Vault</button>
+        <button class="nav-tab" data-tab="modelsTab">Socket Matrix</button>
       </div>
 
       <!-- Tab 1: Execution Console -->
       <div id="chatTab" class="tab-pane active">
         <div id="chatFeed" class="chat-feed">
-          <div class="message system-msg">
-            <div class="msg-header">System Kernel Initialized</div>
+          <div class="message system-msg gauntlet-sys-msg">
+            <div class="msg-header">GAUNTLET SYSTEM KERNEL // ONLINE</div>
             <div class="msg-content">
-              Zero context drift runtime ready. Send instructions to create files, fix bugs, or perform code mutations. Failover orchestrator is monitoring rate limits and latency.
+              Zero context drift runtime ready. Armored multi-model failover active. Select any knuckle socket above or enter a coding instruction below to engage the gauntlet.
             </div>
           </div>
         </div>
 
-        <div class="prompt-box">
-          <textarea id="taskPromptInput" rows="3" placeholder="Enter coding instruction (e.g. 'Fix calculation in main.py' or 'Create test_calc.py')..."></textarea>
+        <div class="prompt-box gauntlet-prompt-box">
+          <textarea id="taskPromptInput" rows="3" placeholder="Command the Gauntlet (e.g. 'Fix calculation in main.py' or 'Create test_calc.py')..."></textarea>
           <div class="prompt-actions">
             <div class="flex items-center gap-2">
               <label class="text-[11px] text-[var(--muted-foreground)] flex items-center gap-1 cursor-pointer">
@@ -114,8 +149,9 @@
               </label>
               <button id="runTestsBtn" class="btn btn-sm btn-outline text-[11px]" title="Run workspace unit tests">⚡ Run Tests</button>
             </div>
-            <button id="executeTaskBtn" class="btn btn-primary">
-              <span>Execute Task</span>
+            <button id="executeTaskBtn" class="btn btn-primary gauntlet-engage-btn">
+              <span class="engage-lightning">⚡</span>
+              <span>ENGAGE GAUNTLET</span>
               <span id="execSpinner" class="spinner hidden"></span>
             </button>
           </div>

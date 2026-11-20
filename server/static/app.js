@@ -20,6 +20,7 @@ class KernelIDE {
   initDOMElements() {
     this.primaryModelSelect = document.getElementById("primaryModelSelect");
     this.fallbackPills = document.getElementById("fallbackPills");
+    this.knuckleSockets = document.getElementById("knuckleSockets");
     this.toggleSim429Btn = document.getElementById("toggleSim429Btn");
     this.simStatus = document.getElementById("simStatus");
     this.undoBtn = document.getElementById("undoBtn");
@@ -156,15 +157,44 @@ class KernelIDE {
         this.primaryModelSelect.appendChild(opt);
       });
 
+      // Render Gauntlet Knuckle Sockets HUD
+      if (this.knuckleSockets) {
+        this.knuckleSockets.innerHTML = "";
+        const gemColors = {
+          "primary-mock": "#00f0ff",
+          "fallback-mock": "#9d4edd",
+          "gemini-1.5-flash": "#3b82f6",
+          "gpt-4o-mini": "#10b981",
+          "claude-3-5-sonnet": "#f59e0b",
+          "ollama-qwen": "#ff3366"
+        };
+        this.models.forEach(m => {
+          const isPrimary = m.name === this.primaryModel;
+          const isOverloaded = isPrimary && this.isSimulating429;
+          const socket = document.createElement("button");
+          socket.className = `knuckle-socket ${isPrimary ? "active" : ""} ${m.is_fallback ? "fallback" : ""} ${isOverloaded ? "overloaded" : ""}`;
+          const color = gemColors[m.name] || "#00f0ff";
+          socket.innerHTML = `
+            <span class="gem-dot" style="color:${color}; background:${color};"></span>
+            <span>${m.name}</span>
+          `;
+          socket.title = isOverloaded ? `${m.name} [OVERLOADED 429] - Bypassing` : `${m.name} (${m.provider}) - Click to engage core`;
+          socket.onclick = () => this.setPrimaryModel(m.name);
+          this.knuckleSockets.appendChild(socket);
+        });
+      }
+
       // Update fallback pills
-      this.fallbackPills.innerHTML = "";
-      const fallbacks = this.models.filter(m => m.is_fallback);
-      fallbacks.forEach(fb => {
-        const p = document.createElement("span");
-        p.className = "pill fallback";
-        p.textContent = `↳ ${fb.name}`;
-        this.fallbackPills.appendChild(p);
-      });
+      if (this.fallbackPills) {
+        this.fallbackPills.innerHTML = "";
+        const fallbacks = this.models.filter(m => m.is_fallback);
+        fallbacks.forEach(fb => {
+          const p = document.createElement("span");
+          p.className = "pill fallback";
+          p.textContent = `↳ ${fb.name}`;
+          this.fallbackPills.appendChild(p);
+        });
+      }
 
       // Check if primary is simulating 429
       const primaryCfg = this.models.find(m => m.name === this.primaryModel);
@@ -178,9 +208,9 @@ class KernelIDE {
   }
 
   updateSimButtonState() {
-    this.simStatus.textContent = this.isSimulating429 ? "ON (FAILOVER ACTIVE)" : "OFF";
+    this.simStatus.textContent = this.isSimulating429 ? "ON (OVERLOAD)" : "OFF";
     if (this.isSimulating429) {
-      this.toggleSim429Btn.style.backgroundColor = "rgba(239, 68, 68, 0.25)";
+      this.toggleSim429Btn.style.backgroundColor = "rgba(255, 51, 102, 0.25)";
       this.toggleSim429Btn.style.borderColor = "var(--accent-red)";
       this.toggleSim429Btn.style.color = "var(--accent-red)";
     } else {
@@ -188,6 +218,14 @@ class KernelIDE {
       this.toggleSim429Btn.style.borderColor = "var(--accent-amber)";
       this.toggleSim429Btn.style.color = "var(--accent-amber)";
     }
+    // Re-render knuckle sockets to reflect overloaded state
+    const sockets = document.querySelectorAll(".knuckle-socket");
+    sockets.forEach(s => {
+      if (s.textContent.trim().includes(this.primaryModel)) {
+        if (this.isSimulating429) s.classList.add("overloaded");
+        else s.classList.remove("overloaded");
+      }
+    });
   }
 
   async setPrimaryModel(modelName) {

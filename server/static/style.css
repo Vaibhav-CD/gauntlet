@@ -1,20 +1,214 @@
-/* System Kernel Multi-Model IDE Theme */
+/* Gauntlet Mech-Armor Design Overhaul */
 :root {
-  --bg-dark: #0f1117;
-  --bg-panel: #161922;
-  --bg-card: #1e2230;
-  --bg-input: #12141c;
-  --border-color: #2b3145;
+  --bg-dark: #0a0d14;
+  --bg-panel: #111522;
+  --bg-card: #171d2e;
+  --bg-input: #0d101a;
+  --border-color: #242c44;
   --text-main: #e2e8f0;
   --text-muted: #8b9bb4;
-  --accent-cyan: #06b6d4;
+  --accent-cyan: #00f0ff;
   --accent-blue: #3b82f6;
-  --accent-purple: #8b5cf6;
+  --accent-purple: #9d4edd;
   --accent-green: #10b981;
   --accent-amber: #f59e0b;
-  --accent-red: #ef4444;
+  --accent-red: #ff3366;
+  --gauntlet-gold: #fbbf24;
+  --gauntlet-armor: #1e263d;
+  --gauntlet-glow: rgba(0, 240, 255, 0.35);
   --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
   --font-mono: 'Fira Code', monospace;
+}
+
+/* Gauntlet Top Header */
+.gauntlet-header {
+  height: 62px;
+  background: linear-gradient(90deg, #0e121d 0%, #141a29 50%, #0e121d 100%);
+  border-bottom: 2px solid;
+  border-image: linear-gradient(90deg, transparent, #00f0ff, #9d4edd, transparent) 1;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.6);
+  padding: 0 1.25rem;
+}
+
+.gauntlet-emblem {
+  width: 40px;
+  height: 40px;
+  background: radial-gradient(circle, #1a233a 0%, #0d111c 100%);
+  border: 1.5px solid var(--accent-cyan);
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 0 12px rgba(0, 240, 255, 0.3);
+  transition: all 0.3s ease;
+  cursor: pointer;
+}
+.gauntlet-emblem:hover {
+  transform: scale(1.05);
+  box-shadow: 0 0 18px rgba(0, 240, 255, 0.6);
+}
+
+.gauntlet-svg {
+  width: 32px;
+  height: 32px;
+}
+
+.core-pulse {
+  animation: arcPulse 2s infinite ease-in-out;
+}
+
+@keyframes arcPulse {
+  0%, 100% { r: 2.5; opacity: 0.8; filter: drop-shadow(0 0 2px #00f0ff); }
+  50% { r: 3.2; opacity: 1; filter: drop-shadow(0 0 6px #00f0ff); }
+}
+
+.gauntlet-title {
+  font-family: var(--font-mono);
+  font-size: 1.15rem;
+  font-weight: 800;
+  letter-spacing: 2px;
+  background: linear-gradient(135deg, #ffffff 0%, var(--accent-cyan) 60%, var(--accent-purple) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.gauntlet-version-badge {
+  font-family: var(--font-mono);
+  font-size: 0.65rem;
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: 3px;
+  background: rgba(0, 240, 255, 0.12);
+  border: 1px solid rgba(0, 240, 255, 0.4);
+  color: var(--accent-cyan);
+  letter-spacing: 1px;
+}
+
+/* Gauntlet Knuckle Sockets HUD */
+.gauntlet-knuckle-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(13, 17, 28, 0.7);
+  padding: 4px 10px;
+  border-radius: 6px;
+  border: 1px solid var(--border-color);
+}
+
+.knuckle-label {
+  font-family: var(--font-mono);
+  font-size: 0.65rem;
+  font-weight: 700;
+  color: var(--text-muted);
+  letter-spacing: 1px;
+}
+
+.knuckle-sockets-container {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.knuckle-socket {
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  font-weight: 600;
+  padding: 4px 8px;
+  border-radius: 4px;
+  background: #151a29;
+  border: 1px solid var(--border-color);
+  color: var(--text-muted);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  transition: all 0.2s ease;
+}
+
+.knuckle-socket:hover {
+  background: #1c2338;
+  color: #fff;
+  border-color: var(--accent-cyan);
+}
+
+.knuckle-socket.active {
+  background: linear-gradient(135deg, rgba(0, 240, 255, 0.15), rgba(157, 78, 221, 0.15));
+  border-color: var(--accent-cyan);
+  color: #fff;
+  box-shadow: 0 0 10px rgba(0, 240, 255, 0.3);
+}
+
+.knuckle-socket.fallback {
+  border-color: rgba(157, 78, 221, 0.6);
+  color: #d8b4fe;
+}
+
+.knuckle-socket.overloaded {
+  border-color: var(--accent-red) !important;
+  color: #fca5a5 !important;
+  background: rgba(239, 68, 68, 0.15) !important;
+  animation: sparkHazard 0.8s infinite alternate;
+}
+
+@keyframes sparkHazard {
+  0% { box-shadow: 0 0 5px rgba(255, 51, 102, 0.3); }
+  100% { box-shadow: 0 0 15px rgba(255, 51, 102, 0.8); }
+}
+
+.gem-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  box-shadow: 0 0 6px currentColor;
+}
+
+/* Gauntlet Engagement Button */
+.gauntlet-engage-btn {
+  background: linear-gradient(135deg, #00f0ff 0%, #3b82f6 50%, #9d4edd 100%) !important;
+  color: #050811 !important;
+  font-weight: 800 !important;
+  font-family: var(--font-mono) !important;
+  letter-spacing: 1px;
+  padding: 8px 18px !important;
+  border-radius: 4px;
+  box-shadow: 0 0 15px rgba(0, 240, 255, 0.4);
+  transition: all 0.25s ease;
+}
+
+.gauntlet-engage-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 0 25px rgba(0, 240, 255, 0.7);
+  filter: brightness(1.1);
+}
+
+.gauntlet-engage-btn:active {
+  transform: translateY(1px);
+}
+
+.engage-lightning {
+  font-size: 0.9rem;
+  color: #fff;
+  text-shadow: 0 0 8px #fff;
+}
+
+/* Overload Button */
+.gauntlet-sim-btn {
+  background: rgba(245, 158, 11, 0.1) !important;
+  border: 1px solid var(--accent-amber) !important;
+  color: var(--accent-amber) !important;
+  font-family: var(--font-mono);
+  font-size: 0.75rem !important;
+  font-weight: 700;
+  transition: all 0.2s;
+}
+.gauntlet-sim-btn:hover {
+  background: rgba(245, 158, 11, 0.25) !important;
+}
+
+/* Gauntlet System Msg */
+.gauntlet-sys-msg {
+  border-left: 3px solid var(--accent-cyan) !important;
+  background: linear-gradient(135deg, rgba(0, 240, 255, 0.05) 0%, rgba(157, 78, 221, 0.05) 100%) !important;
 }
 
 * {
